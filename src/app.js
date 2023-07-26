@@ -4,56 +4,60 @@ const app = express();
 
 app.use(express.json());
 
+let nextId = 3;
 const teams = [
-  {
-    id: 1,
-    name: 'Sociedade Esportiva Palmeiras',
-    initials: 'PAL',
-  },
-  {
-    id: 2,
-    name: 'Clube Atlético Mineiro',
-    initials: 'CAM',
-  },
+  { id: 1, nome: 'São Paulo Futebol Clube', sigla: 'SPF' },
+  { id: 2, nome: 'Sociedade Esportiva Palmeiras', sigla: 'PAL' },
 ];
-
-// app.get('/', (req, res) => res.status(200).json({ message: 'Olá Mundo!' }));
 
 app.get('/teams', (req, res) => res.status(200).json({ teams }));
 
-app.post('/teams', (req, res) => {
-  const newTeam = { ...req.body };
-  teams.push(newTeam);
+app.get('/teams/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const team = teams.find((t) => t.id === id);
+  // res.status(200).json(team);
+  if (team) {
+    res.json(team);
+  } else {
+    res.sendStatus(404);
+  }
+});
 
-  res.status(201).json({ team: newTeam });
+app.post('/teams', (req, res) => {
+  const requiredProperties = ['nome', 'sigla'];
+  
+  if (requiredProperties.every((property) => property in req.body)) {
+    const team = { id: nextId, ...req.body };
+    teams.push(team);
+    nextId += 1;
+    res.status(201).json(team);
+  } else {
+    res.sendStatus(400);
+  }
 });
 
 app.put('/teams/:id', (req, res) => {
-  const { id } = req.params;
-  const { name, initials } = req.body;
+  const id = Number(req.params.id);
+  const requiredProperties = ['nome', 'sigla'];
+  const team = teams.find((t) => t.id === id);
 
-  const updateTeam = teams.find((team) => team.id === Number(id));
-
-  if (!updateTeam) {
-    return res.status(404).json({ message: 'Team not found' });
+  if (team && requiredProperties.every((property) => property in req.body)) {
+    const index = teams.indexOf(team);
+    const updated = { id, ...req.body };
+    teams.splice(index, 1, updated);
+  } else {
+    res.sendStatus(400);
   }
-
-  updateTeam.name = name;
-  updateTeam.initials = initials;
-  res.status(200).json({ updateTeam });
 });
 
 app.delete('/teams/:id', (req, res) => {
-  const { id } = req.params;
-  const arrayPosition = teams.findIndex((team) => team.id === Number(id));
-  teams.splice(arrayPosition, 1);
-
-  res.status(200).end();
-});
-
-app.get('/teams/:id', (req, res) => {
-  const team = teams.find(({ id }) => id === Number(req.params.id));
-  res.status(200).json(team);
+  const id = Number(req.params.id);
+  const team = teams.find((t) => t.id === id);
+  if (team) {
+    const index = teams.indexOf(team);
+    teams.splice(index, 1);
+  }
+  res.sendStatus(204);
 });
 
 module.exports = app;
