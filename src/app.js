@@ -1,7 +1,25 @@
 const express = require('express');
+const helmet = require('helmet');
 require('express-async-errors');
+const morgan = require('morgan');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
+
+app.use(helmet());
+app.use(morgan('dev'));
+app.use(express.static('./images'));
+app.use(cors());
+
+// Configuramos um limitador para uma taxa máxima de 100 requisições em um intervalo de 15 minutos
+const limiter = rateLimit({
+  max: 100, // número máximo de requisições
+  windowMs: 15 * 60 * 1000, // intervalo de tempo, em milissegundos, para atingir o número máximo de requisições
+  message: 'Muitas requisições originadas deste IP', // mensagem personalizada quando atinge o limit rate
+});
+
+app.use(limiter);
 
 const teams = require('./utils/teams');
 const apiCredentials = require('./middlewares/apiCredentials');
@@ -12,6 +30,16 @@ app.use(express.json());
 app.use(apiCredentials);
 
 let nextId = 3;
+
+// app.use((req, _res, next) => {
+//   console.log('req.method:', req.method);
+//   console.log('req.path:', req.path);
+//   console.log('req.params:', req.params);
+//   console.log('req.query:', req.query);
+//   console.log('req.headers:', req.headers);
+//   console.log('req.body:', req.body);
+//   next();
+// });
 
 app.get('/teams', (req, res) => res.json(teams));
 
